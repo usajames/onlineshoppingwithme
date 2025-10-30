@@ -9,45 +9,34 @@
   <div class="card">
    <div class="card-body">
     <h3>Cart</h3>
-    <div class="row">
-     <div class="col-sm-3 text-center align-self-center"><img src="{% static 'app/images/product/1.jpg'%}" alt="" srcset="" class="img-fluid img-thumbnail shadow-sm" height="150" width="150"> </div>
-     <div class="col-sm-9">
-      <div>
-       <h5>Product 1</h5>
-       <p class="mb-2 text-muted small">Description: Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum quas, nihil vel velit sed, quos consequatur maiores odio libero eius est in mollitia quo minus dolorum culpa consectetur, ipsam unde!</p>
-       <div class="my-3">
-        <label for="quantity">Quantity:</label>
-        <a class="minus-cart btn"><i class="fas fa-minus-square fa-lg"></i></a>
-          <span id="quantity">3</span>
-        <a class="plus-cart btn"><i class="fas fa-plus-square fa-lg"></i></a>
-       </div> 
-       <div class="d-flex justify-content-between">
-        <a href="#" class="btn btn-sm btn-secondary mr-3">Remove item </a>
-        <p class="mb-0"><span><strong>Rs. 110.00</strong></span></p>
-       </div>
-      </div>
-     </div>
-    </div>
-    <hr class="text-muted">
-    <div class="row my-5">
-     <div class="col-sm-3 text-center align-self-center"> <img src="{% static 'app/images/product/2.jpg'%}" alt="" srcset="" class="img-fluid img-thumbnail shadow-sm" height="150" width="150"></div>
-     <div class="col-sm-9"> 
-      <div>
-       <h5>Product 2</h5>
-       <p class="mb-2 text-muted small">Description: Lorem ipsum dolor sit amet consectetur adipisicing elit. Optio corrupti repudiandae quas tenetur? Vel harum iste impedit ad cupiditate sint soluta consequuntur sed, enim, eligendi labore molestiae! Mollitia, ad exercitationem!</p>
-       <div class="my-3">
-        <label for="quantity">Quantity:</label>
-        <a class="minus-cart btn"><i class="fas fa-minus-square fa-lg"></i></a>
-          <span id="quantity">2</span>
-        <a class="plus-cart btn"><i class="fas fa-plus-square fa-lg"></i></a>
-       </div> 
-       <div class="d-flex justify-content-between">
-        <a href="#" class="btn btn-sm btn-secondary mr-3">Remove item </a>        
-        <p class="mb-0"><span><strong>Rs. 320.00</strong></span></p>
-       </div>
-      </div>
-     </div>
-    </div>
+  {% if cart_items %}
+      {% for item in cart_items %}
+        <div class="row mb-3">
+          <div class="col-sm-3 text-center align-self-center">
+            <img src="{{ item.product.product_image.url }}" alt="{{ item.product.title }}" class="img-fluid img-thumbnail shadow-sm" height="150" width="150">
+          </div>
+          <div class="col-sm-9">
+            <div>
+              <h5>{{ item.product.title }}</h5>
+              <p class="mb-2 text-muted small">{{ item.product.description|truncatechars:120 }}</p>
+              <div class="my-3">
+                <label for="quantity">Quantity:</label>
+                <a href="{% url 'update-cart-quantity' item.id 'dec' %}" class="btn"><i class="fas fa-minus-square fa-lg"></i></a>
+                  <span id="quantity">{{ item.quantity }}</span>
+                <a href="{% url 'update-cart-quantity' item.id 'inc' %}" class="btn"><i class="fas fa-plus-square fa-lg"></i></a>
+              </div>
+              <div class="d-flex justify-content-between">
+                <a href="{% url 'remove-from-cart' item.id %}" class="btn btn-sm btn-secondary mr-3">Remove item </a>
+                <p class="mb-0"><span><strong>Rs. {{ item.line_total|floatformat:2 }}</strong></span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr class="text-muted">
+      {% endfor %}
+    {% else %}
+      <p>Your cart is empty.</p>
+    {% endif %}
    </div>
    </div>
   </div>

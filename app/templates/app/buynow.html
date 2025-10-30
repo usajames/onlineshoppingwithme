@@ -2,5 +2,109 @@
 {% load static %}
 {% block title %}Buy Now{% endblock title %}
 {% block main-content %}
-Product Buy Now
+<div class="container my-5">
+	<h2>Buy Now</h2>
+	{% if product %}
+		<div class="row">
+			<div class="col-sm-4">
+				<img src="{{ product.product_image.url }}" alt="{{ product.title }}" class="img-fluid">
+			</div>
+			<div class="col-sm-8">
+				<h4>{{ product.title }}</h4>
+				<p>{{ product.description }}</p>
+				<h5>Rs. {{ product.discounted_price }}</h5>
+			</div>
+		</div>
+	{% endif %}
+
+	<form method="post" class="mt-4">
+		{% csrf_token %}
+		<input type="hidden" name="product_id" value="{{ product.id }}">
+
+		<h5>Select Address</h5>
+		{% if addresses %}
+			{% for addr in addresses %}
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="custid" id="addr{{ addr.id }}" value="{{ addr.id }}" {% if forloop.first %}checked{% endif %}>
+					<label class="form-check-label" for="addr{{ addr.id }}">
+						{{ addr.name }} — {{ addr.locality }}, {{ addr.city }} ({{ addr.state }})
+					</label>
+				</div>
+			{% endfor %}
+		{% else %}
+			<p>No saved addresses. Please enter a new address below.</p>
+		{% endif %}
+
+		<hr>
+		<h5>Or add a new address</h5>
+		<div class="row">
+			<div class="col-md-6 mb-2">
+				<input name="name" class="form-control" placeholder="Full name">
+			</div>
+			<div class="col-md-6 mb-2">
+				<input name="locality" class="form-control" placeholder="Locality / Address line">
+			</div>
+			<div class="col-md-4 mb-2">
+				<input name="city" class="form-control" placeholder="City">
+			</div>
+			<div class="col-md-4 mb-2">
+				<input name="zipcode" class="form-control" placeholder="Zipcode">
+			</div>
+			<div class="col-md-4 mb-2">
+				<input name="state" class="form-control" placeholder="State">
+			</div>
+		</div>
+
+		<hr>
+		<h5>Payment Method</h5>
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked>
+			<label class="form-check-label" for="cod">Cash on Delivery (COD)</label>
+		</div>
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="payment_method" id="online" value="DEBIT">
+			<label class="form-check-label" for="online">Online Payment</label>
+		</div>
+
+		<div id="online-methods" class="mt-3" style="display:none;">
+			<h6>Choose online method</h6>
+			<div class="form-check">
+				<input class="form-check-input" type="radio" name="payment_method" id="jazz" value="JAZZCASH">
+				<label class="form-check-label" for="jazz">JazzCash</label>
+			</div>
+			<div class="form-check">
+				<input class="form-check-input" type="radio" name="payment_method" id="easy" value="EASYPAISA">
+				<label class="form-check-label" for="easy">EasyPaisa</label>
+			</div>
+			<div class="form-check">
+				<input class="form-check-input" type="radio" name="payment_method" id="sada" value="SADAPAY">
+				<label class="form-check-label" for="sada">SadaPay</label>
+			</div>
+			<div class="form-check">
+				<input class="form-check-input" type="radio" name="payment_method" id="debit" value="DEBIT">
+				<label class="form-check-label" for="debit">Debit / Credit Card</label>
+			</div>
+		</div>
+
+		<div class="mt-4">
+			<button type="submit" class="btn btn-success">Pay / Place Order</button>
+		</div>
+	</form>
+
+	<script>
+		// Show/hide online payment methods when 'Online Payment' radio is selected
+		document.addEventListener('DOMContentLoaded', function(){
+			const onlineRadio = document.getElementById('online');
+			const codRadio = document.getElementById('cod');
+			const methods = document.getElementById('online-methods');
+			function update(){
+				methods.style.display = onlineRadio.checked ? 'block' : 'none';
+			}
+			onlineRadio.addEventListener('change', update);
+			codRadio.addEventListener('change', update);
+			update();
+		});
+	</script>
+
+ </div>
 {% endblock main-content %}

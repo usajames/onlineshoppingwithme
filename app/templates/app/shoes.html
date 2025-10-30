@@ -1,0 +1,30 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block title %}Shoes{% endblock title %}
+
+{% block main-content %}
+<div class="container my-5">
+  <h2 class="text-center mb-4">Shoes Collection</h2>
+  <div class="row">
+    {% for s in shoes %}
+    <div class="col-md-3 col-sm-6 mb-4">
+      <div class="card shadow-sm border-0">
+        <a href="{% url 'product-detail' s.id %}">
+          <img src="{{ s.product_image.url }}" class="card-img-top" alt="{{ s.title }}" style="height: 250px; object-fit: cover;">
+        </a>
+        <div class="card-body text-center">
+          <h6 class="fw-bold">{{ s.title }}</h6>
+          <p class="text-muted mb-1">
+            <del>Rs. {{ s.selling_price }}</del>
+          </p>
+          <p class="fw-bold text-success">Rs. {{ s.discounted_price }}</p>
+          <a href="{% url 'product-detail' s.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p class="text-center text-muted">No shoes available at the moment.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock main-content %}

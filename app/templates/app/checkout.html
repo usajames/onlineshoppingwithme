@@ -1,41 +1,71 @@
 {% extends 'app/base.html' %}
 {% load static %}
-{% block title %}Check_out{% endblock title %}
+{% block title %}Checkout{% endblock title %}
+
 {% block main-content %}
-<div class="container">
- <div class="row mt-5">
-  <div class="col-sm-6">
-    <h4>Order Summary</h4>
-    <hr>
-      <div class="card mb-2">
-        <div class="card-body">
-          <h5>Product: Product 1</h5>
-          <p>Quantity: 2</p>
-          <p class="fw-bold">Price: 100.00</p>
+<div class="container my-5">
+  <div class="row">
+
+    <!-- Left Side: Address -->
+    <div class="col-sm-6">
+      <h4 class="mb-4">Select Shipping Address</h4>
+      <form method="POST" action="{% url 'payment-done' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="custid" class="form-label fw-bold">Choose Address</label>
+          <select name="custid" class="form-select" required>
+            {% for c in request.user.customer_set.all %}
+            <option value="{{ c.id }}">
+              {{ c.name }} - {{ c.locality }}, {{ c.city }}
+            </option>
+            {% endfor %}
+          </select>
         </div>
-      </div>
-    <small>Term and Condition: Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia, ullam saepe! Iure optio repellat dolor velit, minus rem. Facilis cumque neque numquam laboriosam, accusantium adipisci nisi nihil in et quis?</small>
-  </div>
-  <div class="col-sm-4 offset-sm-1">
-    <h4>Select Shipping Address</h4>
-    <hr>
-    <form action="">
-      <div class="card">
-        <div class="card-body">
-        <h5>Sonam Kumari</h5>
-        <p>Hirapur Dhanbad Jharkahnd</p>
+
+        <!-- Payment Method -->
+        <h4 class="mt-4 mb-3">Select Payment Method</h4>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="payment_method" id="debit" value="Debit Card" required>
+          <label class="form-check-label fw-bold" for="debit">💳 Debit Card</label>
         </div>
-      </div>
-        <div class="form-check mt-2 mb-5">
-          <input class="form-check-input" type="radio" value="">
-          <label class="form-check-label fw-bold" for="">
-            Address: 1 </label>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="payment_method" id="jazzcash" value="JazzCash">
+          <label class="form-check-label fw-bold" for="jazzcash">📱 JazzCash</label>
         </div>
-        <div class="text-end">
-          <button type="submit" class="btn btn-warning mt-3 px-5 fw-bold">Continue</button>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="payment_method" id="easypaisa" value="EasyPaisa">
+          <label class="form-check-label fw-bold" for="easypaisa">💸 EasyPaisa</label>
         </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="payment_method" id="sadapay" value="SadaPay">
+          <label class="form-check-label fw-bold" for="sadapay">💰 SadaPay</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-4">Place Order</button>
       </form>
     </div>
+
+    <!-- Right Side: Order Summary -->
+    <div class="col-sm-6">
+      <h4 class="mb-4">Your Order Summary</h4>
+      {% for item in request.user.cart_set.all %}
+      <div class="card mb-3 p-3">
+        <div class="row">
+          <div class="col-sm-4">
+            <img src="{{ item.product.product_image.url }}" class="img-fluid" alt="{{ item.product.title }}">
+          </div>
+          <div class="col-sm-8">
+            <h5>{{ item.product.title }}</h5>
+            <p>Qty: {{ item.quantity }}</p>
+            <p class="fw-bold">Price: Rs. {{ item.product.discounted_price }}</p>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <p>No items in your cart.</p>
+      {% endfor %}
+    </div>
+
   </div>
 </div>
 {% endblock main-content %}

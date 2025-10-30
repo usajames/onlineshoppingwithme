@@ -39,22 +39,23 @@
              </a>
              <ul class="dropdown-menu" aria-labelledby="electronicsDropdown">
                <li><a class="dropdown-item" href="{% url 'mobile' %}">Mobile</a></li>
-               <li><a class="dropdown-item" href="#">Laptop</a></li>
+               <li><a class="dropdown-item" href="{% url 'laptop' %}">Laptops</a></li>
              </ul>
            </li>
            <li class="nav-item dropdown">
              <a class="nav-link dropdown-toggle text-white" href="#" id="fashionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                Fashion
              </a>
-             <ul class="dropdown-menu" aria-labelledby="fashionDropdown">
-               <li><a class="dropdown-item" href="#">Top Wear</a></li>
-               <li><a class="dropdown-item" href="#">Bottom Wear</a></li>
-             </ul>
+            <ul class="dropdown-menu" aria-labelledby="fashionDropdown">
+              <li><a class="dropdown-item" href="{% url 'topwear' %}">Top Wear</a></li>
+              <li><a class="dropdown-item" href="{% url 'bottomwear' %}">Bottom Wear</a></li>
+              <li><a class="dropdown-item" href="{% url 'shoes' %}">Shoes</a></li>
+            </ul>
            </li>
          </ul>
-         <form class="d-flex">
-           <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-           <button class="btn btn-warning" type="submit">S</button>
+         <form class="d-flex" method="get" action="{% url 'search' %}">
+           <input name="q" class="form-control me-2" type="search" placeholder="Search products, brands..." aria-label="Search">
+           <button class="btn btn-warning" type="submit">Search</button>
          </form>
          <div>
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
@@ -66,7 +67,7 @@
                 <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
                 <li><a class="dropdown-item" href="{% url 'orders' %}">Orders</a></li>
                 <li><a class="dropdown-item" href="{% url 'changepassword' %}">Change Password</a></li>
-                <li><a class="dropdown-item" href="#">Logout</a></li>
+                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
               </ul>
             </li>
             <li class="nav-item mx-2">
@@ -83,6 +84,17 @@
        </div>
      </div>
     </nav>
+      <!-- Messages -->
+      <div class="container mt-3">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
     {% block banner_slider %} {% endblock banner_slider %}
     {% block livesale %} {% endblock livesale %}
     {% block main-content %} {% endblock main-content %}

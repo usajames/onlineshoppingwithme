@@ -1,0 +1,23 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block title %}Search Results{% endblock title %}
+{% block main-content %}
+<div class="container my-5">
+  <h3>Search results for "{{ query }}"</h3>
+  <div class="row">
+    {% if results and results.count > 0 %}
+      {% for product in results %}
+      <div class="col-sm-3 text-center mb-4">
+        <a href="{% url 'product-detail' product.id %}" class="btn">
+          <img src="{{ product.product_image.url }}" alt="{{ product.title }}" class="img-fluid" height="200">
+          <div class="fw-bold">{{ product.title }}</div>
+          <div>Rs. {{ product.discounted_price }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No products matched your search.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock main-content %}

@@ -1,0 +1,14 @@
+{% extends 'app/base.html' %}
+{% block title %}Order Success{% endblock title %}
+
+{% block main-content %}
+<div class="container text-center my-5">
+  <h2 class="text-success fw-bold">✅ Order Placed Successfully!</h2>
+  <p>Your payment method: <strong>{{ payment_method }}</strong></p>
+  {% if tracking_id %}
+    <p>Your tracking id: <strong>{{ tracking_id }}</strong></p>
+    <p>Use this ID to track your order in the Orders page.</p>
+  {% endif %}
+  <a href="{% url 'home' %}" class="btn btn-primary mt-3">Continue Shopping</a>
+</div>
+{% endblock main-content %}
