@@ -4,18 +4,36 @@
 {% block main-content %}
 <div class="container my-5">
  <div class="row">
- <h3>Welcome Sonam</h3>
-  <div class="col-sm-2 border-end">
-   <ul class="list-unstyled">
-    <li class="d-grid"><a href="{% url 'orders' %}" class="btn btn-primary">Orders</a></li>
-   </ul>
-  </div>
-  <div class="col-sm-9 offset-sm-1">
-   <div class="row">
-    <div class="col-sm-6">Order 1</div>
-    <div class="col-sm-6">Order 2</div>
-   </div>
-  </div>
+    <div class="col-12 mb-3">
+        <h3>Your Orders</h3>
+    </div>
+    <div class="col-12">
+        {% if orders and orders.count %}
+            <div class="list-group">
+                {% for o in orders %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="mb-1">{{ o.product.title }}</h5>
+                                <p class="mb-1 small text-muted">Qty: {{ o.quantity }} &middot; Price: Rs. {{ o.product.discounted_price }}</p>
+                                <p class="mb-1">Status: <strong>{{ o.status }}</strong></p>
+                                <p class="mb-0 small">Ordered on: {{ o.ordered_date|date:"Y-m-d H:i" }}</p>
+                            </div>
+                            <div class="text-end">
+                                {% if o.tracking_id %}
+                                    <a href="{% url 'track-order' %}?tracking_id={{ o.tracking_id }}" class="btn btn-outline-primary btn-sm">Track</a>
+                                {% else %}
+                                    <span class="text-muted small">No tracking</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>You have not placed any orders yet.</p>
+        {% endif %}
+    </div>
  </div>
 </div>
 {% endblock main-content %}

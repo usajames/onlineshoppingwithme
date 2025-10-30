@@ -5,8 +5,12 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from .models import Customer, Product, Cart, OrderPlaced
 from django.db.models import Q
+from django.http import JsonResponse
 import uuid
 from .forms import CustomerRegistrationForm
+from django.middleware.csrf import get_token
+from django.contrib.auth.models import User
+from django.utils.crypto import get_random_string
 
 
 # ✅ Home Page View (Class-Based)
@@ -111,6 +115,67 @@ def update_cart_quantity(request, cart_id, action):
             cart_item.delete()
 
     return redirect('add-to-cart')
+
+
+@login_required
+def cart_update_api(request):
+    """AJAX-friendly endpoint to update cart item quantity and return updated totals as JSON."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=400)
+
+    cart_id = request.POST.get('cart_id')
+    action = request.POST.get('action')
+    if not cart_id or not action:
+        return JsonResponse({'error': 'cart_id and action required'}, status=400)
+
+    try:
+        cart_item = Cart.objects.get(id=cart_id, user=request.user)
+    except Cart.DoesNotExist:
+        return JsonResponse({'error': 'Cart item not found'}, status=404)
+
+    # perform action
+    if action == 'inc':
+        cart_item.quantity += 1
+        cart_item.save()
+    elif action == 'dec':
+        if cart_item.quantity > 1:
+            cart_item.quantity -= 1
+            cart_item.save()
+        else:
+            # if reducing below 1, remove the item
+            cart_item.delete()
+            # indicate the item was removed
+            removed = True
+    else:
+        return JsonResponse({'error': 'invalid action'}, status=400)
+
+    # recompute totals
+    cart_items = Cart.objects.filter(user=request.user).select_related('product')
+    amount = 0
+    for it in cart_items:
+        amount += it.quantity * it.product.discounted_price
+
+    shipping = 0 if amount > 5000 else 70
+    total = amount + shipping
+
+    # line total for this item (if still exists)
+    try:
+        new_item = Cart.objects.get(id=cart_id, user=request.user)
+        line_total = new_item.quantity * new_item.product.discounted_price
+        new_quantity = new_item.quantity
+    except Cart.DoesNotExist:
+        line_total = 0
+        new_quantity = 0
+
+    return JsonResponse({
+        'success': True,
+        'cart_id': int(cart_id),
+        'quantity': new_quantity,
+        'line_total': float(line_total),
+        'amount': float(amount),
+        'shipping': float(shipping),
+        'total': float(total),
+    })
 
 
 def buy_now(request):
@@ -233,7 +298,12 @@ def clear_profiles(request):
 
 
 def orders(request):
-    return render(request, 'app/orders.html')
+    # Show all orders placed by the logged-in user
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    user_orders = OrderPlaced.objects.filter(user=request.user).select_related('product', 'customer')
+    return render(request, 'app/orders.html', {'orders': user_orders})
 
 
 def change_password(request):
@@ -337,7 +407,13 @@ def login(request):
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            # detect if this is the user's first login by checking last_login
+            first_login = user.last_login is None
             auth_login(request, user)
+            if first_login:
+                messages.success(request, 'Welcome — your profile is created. Please review your details.')
+                return redirect('profile')
+
             messages.success(request, 'Login successfully')
             return redirect('home')
         else:
@@ -402,6 +478,124 @@ def payment_done(request):
 
 def logout_view(request):
     """Log out the user and show a message."""
+    # Per request: delete ALL Customer profiles when a user logs out so that
+    # subsequent logins/registrations only show the current user's profile.
+    # WARNING: This is destructive and removes all saved addresses/profiles.
+    try:
+        Customer.objects.all().delete()
+    except Exception:
+        # don't block logout on deletion errors
+        pass
+
     auth_logout(request)
-    messages.info(request, 'You are logged out')
+    messages.info(request, 'You are logged out. All previous profiles were removed.')
     return redirect('login')
+
+
+def track_order(request):
+    """Allow users to enter a tracking id and view associated order(s)."""
+    orders = None
+    tracking = ''
+    # support GET (e.g., /trackorder/?tracking_id=...) and POST from the form
+    if request.method == 'POST':
+        tracking = request.POST.get('tracking_id', '').strip()
+    else:
+        tracking = request.GET.get('tracking_id', '').strip()
+
+    if tracking:
+        orders = OrderPlaced.objects.filter(tracking_id=tracking)
+        if not orders.exists():
+            messages.error(request, 'No orders found for that tracking id')
+
+    return render(request, 'app/track_order.html', {'orders': orders, 'tracking': tracking})
+
+
+@login_required
+def cancel_order(request, order_id):
+    # only accept POST for cancel to avoid accidental GET cancels
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method')
+        return redirect('track-order')
+
+    order = get_object_or_404(OrderPlaced, id=order_id)
+    # only allow owner to cancel
+    if order.user != request.user:
+        messages.error(request, 'Unauthorized')
+        return redirect('track-order')
+
+    if order.status in ['Cancelled', 'Returned']:
+        messages.info(request, 'Order already cancelled or returned')
+    else:
+        order.status = 'Cancelled'
+        order.save()
+        messages.success(request, 'Order cancelled')
+
+    return redirect('track-order')
+
+
+@login_required
+def return_order(request, order_id):
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method')
+        return redirect('track-order')
+
+    order = get_object_or_404(OrderPlaced, id=order_id)
+    if order.user != request.user:
+        messages.error(request, 'Unauthorized')
+        return redirect('track-order')
+
+    if order.status == 'Returned':
+        messages.info(request, 'Order already returned')
+    else:
+        order.status = 'Returned'
+        order.save()
+        messages.success(request, 'Order marked as returned')
+
+    return redirect('track-order')
+
+
+def forgot_password(request):
+    """Simple dev-only password reset: regenerate a password and show it to the user.
+
+    NOTE: This is not secure for production. For production use Django's
+    password reset via email tokens.
+    """
+    new_password = None
+    if request.method == 'POST':
+        identifier = request.POST.get('identifier', '').strip()
+        user = None
+        if identifier:
+            # try by username then by email
+            try:
+                user = User.objects.get(username=identifier)
+            except User.DoesNotExist:
+                try:
+                    user = User.objects.get(email=identifier)
+                except User.DoesNotExist:
+                    user = None
+
+        if not user:
+            messages.error(request, 'No user found with that username or email')
+        else:
+            new_password = get_random_string(8)
+            user.set_password(new_password)
+            user.save()
+            messages.success(request, 'Password regenerated; please note it carefully')
+
+    return render(request, 'app/forgot_password.html', {'new_password': new_password})
+
+
+def csrf_debug(request):
+    """Development-only view to help debug CSRF token mismatches.
+
+    Shows the CSRF token that Django generated for this request and the
+    csrftoken cookie value sent by the browser. Use this to compare and
+    diagnose token rotation / cookie issues.
+    """
+    # generate/get the token for this request
+    token = get_token(request)
+    cookie_val = request.COOKIES.get('csrftoken')
+    return render(request, 'app/csrf_debug.html', {
+        'token': token,
+        'cookie_val': cookie_val,
+    })

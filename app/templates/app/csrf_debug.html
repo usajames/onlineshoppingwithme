@@ -1,0 +1,21 @@
+{% extends 'app/base.html' %}
+{% block title %}CSRF Debug{% endblock title %}
+{% block main-content %}
+<div class="container my-5">
+  <h3>CSRF Debug</h3>
+  <p>This page shows the CSRF token Django generated for this request and the csrftoken cookie value that the browser sent.</p>
+  <ul>
+    <li><strong>Server token (get_token):</strong> <code>{{ token }}</code></li>
+    <li><strong>Cookie 'csrftoken' sent by browser:</strong> <code>{{ cookie_val }}</code></li>
+  </ul>
+
+  <h5>Quick test form</h5>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="test" value="1">
+    <button class="btn btn-primary" type="submit">Submit POST (will show 403 if CSRF mismatch)</button>
+  </form>
+
+  <p class="mt-3 text-muted">Notes: If the two tokens above differ, the browser cookie and the template token are not in sync. Try clearing cookies and reloading this page (not back-button). Also ensure you're using the same host/port (e.g., localhost vs 127.0.0.1) and that your browser accepts cookies.</p>
+</div>
+{% endblock main-content %}
